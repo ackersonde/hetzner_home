@@ -1,77 +1,72 @@
-name: Deploy Hetzner Home server
+name: Deploy Hetzner Homepage Server
 
 on:
   push:
     branches: [ main ]
   workflow_dispatch:
-    inputs:
-      ca_pub_fingerprint:
-        description: fingerprint of CA signed user cert
-        required: false
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
         with:
-          python-version: '3.9'
+          python-version: '3.10'
       - uses: actions/setup-go@v2
         with:
           go-version: '1.18'
       - name: Build application
-        env:
-          CTX_DIGITALOCEAN_DROPLET_PROXY_TOKEN: ${{ secrets.CTX_DIGITALOCEAN_DROPLET_PROXY_TOKEN }}
-          CTX_DIGITALOCEAN_FIREWALL: ${{ secrets.CTX_DIGITALOCEAN_FIREWALL }}
-          ORG_HETZNER_CLOUD_API_TOKEN: ${{ secrets.ORG_HETZNER_CLOUD_API_TOKEN }}
-          ORG_ACKDE_HOST_SSH_KEY_PUB_B64: ${{ secrets.ORG_ACKDE_HOST_SSH_KEY_PUB_B64 }}
-          ORG_ACKDE_HOST_SSH_KEY_PRIV_B64: ${{ secrets.ORG_ACKDE_HOST_SSH_KEY_PRIV_B64 }}
-          ORG_SERVER_DEPLOY_CACERT_B64: ${{ secrets.ORG_SERVER_DEPLOY_CACERT_B64 }}
-          ORG_SERVER_DEPLOY_SECRET_B64: ${{ secrets.ORG_SERVER_DEPLOY_SECRET_B64 }}
-          ORG_SERVER_DEPLOY_PUBLIC_B64: ${{ secrets.ORG_SERVER_DEPLOY_PUBLIC_B64 }}
-          ORG_TITAN_PUBLIC_KEY: ${{ secrets.ORG_TITAN_PUBLIC_KEY }}
-          ACME_JSON: ${{ secrets.ORG_ACME_JSON }}
-          SYNCTHING_CONFIG_B64: ${{ secrets.ORG_CLOUD_SYNCTHING_CONFIG }}
-          SYNCTHING_KEY_B64: ${{ secrets.ORG_CLOUD_SYNCTHING_KEY }}
-          SYNCTHING_CERT_B64: ${{ secrets.ORG_CLOUD_SYNCTHING_CERT }}
-          ORG_MASTER_HOST: ${{ secrets.ORG_IPV6_MASTER_HOME }}
-          ORG_BUILD_HOST: ${{ secrets.ORG_IPV6_BUILD_HOME }}
-          ORG_SLAVE_HOST: ${{ secrets.ORG_IPV6_SLAVE_HOME }}
-          SERVERS: "ubuntu@$ORG_MASTER_HOST ubuntu@$ORG_SLAVE_HOST ackersond@$ORG_BUILD_HOST"
-          GITHUB_APP_CLIENT_ID: ${{ secrets.CTX_GITHUB_APP_CLIENT_ID }}
-          GITHUB_SECRETS_PK_PEM: ${{ secrets.CTX_GITHUB_SECRETS_PK_PEM }}
         run: |
           go mod tidy
-          go build do.go
+          go build hetzner.go
 
-          export SYNCTHING_CONFIG_B64=$(echo ${{ secrets.SYNCTHING_CONFIG_B64 }} | base64 -d)
-          export SYNCTHING_KEY_B64=$(echo ${{ secrets.SYNCTHING_KEY_B64 }} | base64 -d)
-          export SYNCTHING_CERT_B64=$(echo ${{ secrets.SYNCTHING_CERT_B64 }} | base64 -d)
-          envsubst '${ORG_ACKDE_HOST_SSH_KEY_PRIV_B64} ${ORG_ACKDE_HOST_SSH_KEY_PUB_B64} ${ORG_SERVER_DEPLOY_CACERT_B64} ${ORG_SERVER_DEPLOY_SECRET_B64} ${ORG_SERVER_DEPLOY_PUBLIC_B64} ${ORG_TITAN_PUBLIC_KEY} ${ACME_JSON} ${SYNCTHING_CONFIG} ${SYNCTHING_KEY} ${SYNCTHING_CERT}' < scripts/raw_ubuntu_userdata.sh > hetznerhome_ubuntu_userdata.sh
+          export WG_DO_HOME_PORT=$(echo ${{ secrets.ORG_WG_DO_HOME_PORT }} | base64 -d)
+          export WG_DO_PRIVATE_KEY=$(echo ${{ secrets.ORG_WG_DO_PRIVATE_KEY }} | base64 -d)
+          export WG_HOME_PUBLIC_KEY=$(echo ${{ secrets.ORG_WG_HOME_PUBLIC_KEY }} | base64 -d)
+          export WG_DO_HOME_PRESHAREDKEY=$(echo ${{ secrets.ORG_WG_DO_HOME_PRESHAREDKEY }} | base64 -d)
+          sed -i -e "s@{{WG_DO_HOME_PORT}}@$WG_DO_HOME_PORT@" scripts/raw_ubuntu_userdata.sh
+          sed -i -e "s@{{WG_DO_PRIVATE_KEY}}@$WG_DO_PRIVATE_KEY@" scripts/raw_ubuntu_userdata.sh
+          sed -i -e "s@{{WG_HOME_PUBLIC_KEY}}@$WG_HOME_PUBLIC_KEY@" scripts/raw_ubuntu_userdata.sh
+          sed -i -e "s@{{WG_DO_HOME_PRESHAREDKEY}}@$WG_DO_HOME_PRESHAREDKEY@" scripts/raw_ubuntu_userdata.sh
 
-          export ORG_WG_DO_HOME_PORT=$(echo ${{ secrets.ORG_WG_DO_HOME_PORT }} | base64 -d)
-          export ORG_WG_DO_PRIVATE_KEY=$(echo ${{ secrets.ORG_WG_DO_PRIVATE_KEY }} | base64 -d)
-          export ORG_WG_HOME_PUBLIC_KEY=$(echo ${{ secrets.ORG_WG_HOME_PUBLIC_KEY }} | base64 -d)
-          export ORG_WG_DO_HOME_PRESHAREDKEY=$(echo ${{ secrets.ORG_WG_DO_HOME_PRESHAREDKEY }} | base64 -d)
-          sed -i -e "s@{{ORG_WG_DO_HOME_PORT}}@$ORG_WG_DO_HOME_PORT@" hetznerhome_ubuntu_userdata.sh
-          sed -i -e "s@{{ORG_WG_DO_PRIVATE_KEY}}@$ORG_WG_DO_PRIVATE_KEY@" hetznerhome_ubuntu_userdata.sh
-          sed -i -e "s@{{ORG_WG_HOME_PUBLIC_KEY}}@$ORG_WG_HOME_PUBLIC_KEY@" hetznerhome_ubuntu_userdata.sh
-          sed -i -e "s@{{ORG_WG_DO_HOME_PRESHAREDKEY}}@$ORG_WG_DO_HOME_PRESHAREDKEY@" hetznerhome_ubuntu_userdata.sh
+          export CTX_DIGITALOCEAN_DROPLET_PROXY_TOKEN=$(echo ${{ secrets.ORG_DIGITALOCEAN_DROPLET_PROXY_TOKEN }} | base64 -d)
+          export CTX_DIGITALOCEAN_FIREWALL=$(echo ${{ secrets.ORG_DIGITALOCEAN_FIREWALL }} | base64 -d)
+          export HETZNER_API_TOKEN=$(echo ${{ secrets.ORG_HETZNER_CLOUD_API_TOKEN }} | base64 -d)
+          export HETZNER_VAULT_VOLUME_ID=$(echo ${{ secrets.ORG_HETZNER_VAULT_VOLUME_ID }} | base64 -d)
+          export HETZNER_FIREWALL=$(echo ${{ secrets.ORG_HETZNER_HOME_FIREWALL }} | base64 -d)
+          export SERVER_DEPLOY_CACERT_B64=${{ secrets.ORG_SERVER_DEPLOY_CACERT }}
+          export SERVER_DEPLOY_SECRET_B64=${{ secrets.ORG_SERVER_DEPLOY_SECRET }}
+          export SERVER_DEPLOY_PUBLIC_B64=${{ secrets.ORG_SERVER_DEPLOY_PUBLIC }}
+          export SYNCTHING_CONFIG_B64=${{ secrets.ORG_CLOUD_SYNCTHING_CONFIG }}
+          export SYNCTHING_KEY=$(echo ${{ secrets.ORG_CLOUD_SYNCTHING_KEY }} | base64 -d)
+          export SYNCTHING_CERT=$(echo ${{ secrets.ORG_CLOUD_SYNCTHING_CERT }} | base64 -d)
+          export TITAN_PUBLIC_KEY=$(echo ${{ secrets.ORG_TITAN_PUBLIC_KEY }} | base64 -d)
+          export ACME_JSON_64=${{ secrets.ORG_ACME_JSON }}
+
+          envsubst '$SERVER_DEPLOY_CACERT_B64, $SERVER_DEPLOY_SECRET_B64, $SERVER_DEPLOY_PUBLIC_B64, $TITAN_PUBLIC_KEY, $ACME_JSON_64, $SYNCTHING_CONFIG_B64, $SYNCTHING_KEY, $SYNCTHING_CERT' < scripts/raw_ubuntu_userdata.sh >ubuntu_userdata.sh
+
+          export BUILD_HOST=$(echo ${{ secrets.ORG_BUILD_HOST }} | base64 -d)
+          export MASTER_HOST=$(echo ${{ secrets.ORG_MASTER_HOST }} | base64 -d)
+          export SLAVE_HOST=$(echo ${{ secrets.ORG_SLAVE_HOST }} | base64 -d)
+          export SERVERS="ubuntu@$MASTER_HOST ubuntu@$SLAVE_HOST ackersond@$BUILD_HOST"
+          export GITHUB_APP_CLIENT_ID=$(echo ${{ secrets.ORG_GITHUB_APP_CLIENT_ID }} | base64 -d)
+          export GITHUB_SECRETS_PK_PEM=$(echo ${{ secrets.ORG_GITHUB_SECRETS_PK_PEM }} | base64 -d)
 
           mkdir ~/.ssh # for new RSA key created in next step
-          ./do -fn=createNewServer -tag=traefik
+          ./hetzner -fn=createNewServer -tag=homepage
 
           public_ip_address=$(curl -s https://checkip.amazonaws.com)
           source /tmp/new_hetzner_server_params
 
-          ./do -fn=firewallSSH -allow=true -ip=$public_ip_address
+          ./hetzner -fn=firewallSSH -tag=traefik -ip=$public_ip_address -serverID=$NEW_SERVER_ID
 
           sudo apt-get -y install nmap
-          while [ `nmap $NEW_SERVER_IPV4 -PN -p ssh | egrep 'open|closed|filtered' | awk '{print $2}'` == "closed" ]
+          while [ `nmap "$NEW_SERVER_IPV4" -PN -p ssh | egrep 'open|closed|filtered' | awk '{print $2}'` != "open" ]
           do
             echo "ssh not available..."
-            sleep 5
+            ./hetzner -fn=checkServer -serverID=$NEW_SERVER_ID
+            sleep 3
           done
 
           # prepare Traefik directory
@@ -81,23 +76,20 @@ jobs:
             [ $? -ne 0 ] && echo 'Cloud-init failed' && exit 1
             echo 'Cloud-init succeeded at ' `date -R`  > ~/post-cloud-init.log"
 
-          # Cloud-init setup new host keys - let's ditch the orig ones
-          ssh-keygen -f "/home/runner/.ssh/known_hosts" -R $NEW_SERVER_IPV4
-
-          scp -o StrictHostKeyChecking=no scripts/dynamic_conf.yml root@$NEW_SERVER_IPV4:~/traefik/
+          scp scripts/dynamic_conf.yml root@$NEW_SERVER_IPV4:~/traefik/
+          scp /home/runner/.ssh/id_rsa root@$NEW_SERVER_IPV4:~/.ssh/
 
           # deploy traefik to droplet
           ssh root@$NEW_SERVER_IPV4 "\
-            export SYNCTHING_HOSTNAME=$(echo ${{ secrets.ORG_CLOUD_SYNCTHING_HOSTNAME }} | base64 -d) && \
             docker run -d --name ipv6nat --cap-drop ALL --cap-add NET_ADMIN --cap-add NET_RAW --network host --restart unless-stopped -v /var/run/docker.sock:/var/run/docker.sock:ro robbertkl/ipv6nat && \
             docker run -d --restart=always \
-              -e DO_AUTH_TOKEN=${{ secrets.CTX_DIGITALOCEAN_DNS_TOKEN }} \
+              -e DO_AUTH_TOKEN=$(echo ${{ secrets.ORG_DIGITALOCEAN_DNS_TOKEN }} | base64 -d) \
               -v /var/run/docker.sock:/var/run/docker.sock:ro \
               -v ~/traefik/logs:/var/log/traefik/ \
               -v ~/traefik/acme.json:/acme.json \
               -v ~/traefik/dynamic_conf.yml:/dynamic_conf.yml \
               --label='traefik.enable=true' \
-              --label='traefik.http.middlewares.api_auth.basicauth.users=${{ secrets.CTX_BASIC_AUTH_USER }}:${{ secrets.CTX_BASIC_AUTH_PASSWD }}' \
+              --label='traefik.http.middlewares.api_auth.basicauth.users=$(echo ${{ secrets.ORG_CLOUD_SYNCTHING_BASIC_AUTH_USER }} | base64 -d):$(echo ${{ secrets.ORG_CLOUD_SYNCTHING_BASIC_AUTH_PASS }} | base64 -d)' \
               --label='traefik.http.routers.api.entrypoints=web,secure' \
               --label='traefik.http.routers.api.middlewares=http-ratelimit@file,secHeaders@file,api_auth' \
               --label='traefik.http.routers.api.rule=Host(\`monitor.ackerson.de\`)' \
@@ -121,11 +113,11 @@ jobs:
               --certificatesResolvers.letsencrypt.acme.dnsChallenge.provider=digitalocean \
               --certificatesResolvers.letsencrypt.acme.dnsChallenge.delayBeforeCheck=5 && \
             docker run -d --restart=always \
-              -v /root/syncthing:/var/syncthing --hostname=$SYNCTHING_HOSTNAME \
+              -v /root/syncthing:/var/syncthing --hostname=$(echo ${{ secrets.ORG_CLOUD_SYNCTHING_HOSTNAME }} | base64 -d) \
               --label='traefik.enable=true' \
               --label='traefik.http.routers.syncthing.tls.certResolver=letsencrypt' \
-              --label='traefik.http.routers.syncthing.tls.domains=$SYNCTHING_HOSTNAME' \
-              --label='traefik.http.routers.syncthing.rule=Host(\`$SYNCTHING_HOSTNAME\`)' \
+              --label='traefik.http.routers.syncthing.tls.domains=$(echo ${{ secrets.ORG_CLOUD_SYNCTHING_HOSTNAME }} | base64 -d)' \
+              --label='traefik.http.routers.syncthing.rule=Host(\`$(echo ${{ secrets.ORG_CLOUD_SYNCTHING_HOSTNAME }} | base64 -d)\`)' \
               --label='traefik.http.routers.syncthing.middlewares=http-ratelimit@file,secHeaders@file,api_auth' \
               --label='traefik.http.routers.syncthing.service=syncthing-svc' \
               --label='traefik.http.services.syncthing-svc.loadbalancer.server.port=8384' \
@@ -133,27 +125,29 @@ jobs:
 
           # New server is up and running - prepare the old one for death
           # retrieve current deployment priv key
-          cat <<EOF >~/.ssh/id_rsa_old
-          ${{ secrets.ORG_DIGITALOCEAN_SSH_PRIVKEY }}
-          EOF
-          chmod 400 ~/.ssh/id_rsa_old
+          # cat <<EOF >~/.ssh/id_rsa_old
+          # $(echo ${{ secrets.HETZNER_SSH_PRIVKEY }} | base64 -d)
+          # EOF
+          # chmod 400 ~/.ssh/id_rsa_old
+
+          export SLACK_NOTIFY_TOKEN=$(echo ${{ secrets.ORG_SLACK_NOTIFICATIONS_TOKEN }} | base64 -d)
 
           # update Vault CIDRs with new addresses
-          curl -s -X POST -d token=${{ secrets.ORG_SLACK_NOTIFICATIONS_TOKEN }} -d channel=C33QYV3PW \
-            -d text="vfa update $NEW_SERVER_IPV6,$NEW_SERVER_IPV4" https://slack.com/api/chat.postMessage
+          #curl -s -X POST -d token=$SLACK_NOTIFY_TOKEN -d channel=C33QYV3PW \
+          #  -d text="vfa update $NEW_SERVER_IPV6,$NEW_SERVER_IPV4" https://slack.com/api/chat.postMessage
 
           # Use existing server to update new firewall rules for home network & vault instance
-          envsubst '${ORG_MASTER_HOST} ${ORG_SLAVE_HOST} ${ORG_BUILD_HOST} ${NEW_SERVER_IPV6} ${OLD_SERVER_IPV6}' < scripts/firewall_rules.sh > fw_rules.sh
-          if scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_old fw_rules.sh root@ackerson.de:~/ ; then
-            if ! ssh -i ~/.ssh/id_rsa_old root@ackerson.de /bin/bash /root/fw_rules.sh ; then
-              curl -s -o /dev/null -X POST -d token=${{ secrets.ORG_SLACK_NOTIFICATIONS_TOKEN }} -d channel=C092UE0H4 \
-                -d text="Failed to update firewall rules: ${OLD_SERVER_IPV6} => ${NEW_SERVER_IPV6}" \
-                https://slack.com/api/chat.postMessage
-            fi
-          else
-            curl -s -o /dev/null -X POST -d token=${{ secrets.ORG_SLACK_NOTIFICATIONS_TOKEN }} -d channel=C092UE0H4 \
-              -d text="Unable to reach ackerson.de => Perhaps this is first run?" https://slack.com/api/chat.postMessage
-          fi
+          envsubst '${MASTER_HOST} ${SLAVE_HOST} ${BUILD_HOST} ${NEW_SERVER_IPV6} ${OLD_SERVER_IPV6}' < scripts/firewall_rules.sh > fw_rules.sh
+          # if scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_old fw_rules.sh root@ackerson.de:~/ ; then
+          #   if ! ssh -i ~/.ssh/id_rsa_old root@ackerson.de /bin/bash /root/fw_rules.sh ; then
+          #     curl -s -o /dev/null -X POST -d token=$SLACK_NOTIFY_TOKEN -d channel=C092UE0H4 \
+          #       -d text="Failed to update firewall rules: ${OLD_SERVER_IPV6} => ${NEW_SERVER_IPV6}" \
+          #       https://slack.com/api/chat.postMessage
+          #   fi
+          # else
+          #   curl -s -o /dev/null -X POST -d token=$SLACK_NOTIFY_TOKEN -d channel=C092UE0H4 \
+          #     -d text="Unable to reach ackerson.de => Perhaps this is first run?" https://slack.com/api/chat.postMessage
+          # fi
 
           # update PRIVKEY to new one for subsequent deployments
           # grab github.py from pi-ops repo
@@ -163,33 +157,32 @@ jobs:
           export GITHUB_INSTALL_ID=$(echo ${{ secrets.ORG_GITHUB_INSTALL_ID }} | base64 -d)
           python -m pip install --upgrade pip
           pip install -r scripts/requirements.txt
-          python scripts/update_github_secret.py --name CTX_DIGITALOCEAN_SSH_PRIVKEY -f ~/.ssh/id_rsa
+          python scripts/update_github_secret.py --name HETZNER_SSH_PRIVKEY -f ~/.ssh/id_rsa
 
           # perform final cleanup
-          ./do -fn=updateDNS -dropletID=$NEW_DROPLET_ID
-          ./do -fn=firewallSSH -allow=false -ip=$public_ip_address
-          ./do -fn=deleteServer -dropletID=$OLD_DROPLET_ID
-          ./do -fn=deleteSSHKey -sshKeyID=$DEPLOY_KEY_ID
+          ./hetzner -fn=cleanupDeploy -serverID=$NEW_SERVER_ID -tag=homepage
 
+          GITHUB_USERNAME=$(echo ${{ secrets.ORG_GITHUB_PERSONAL_ACCESS_USERNAME }} | base64 -d)
+          GITHUB_TOKEN=$(echo ${{ secrets.ORG_GITHUB_PERSONAL_ACCESS_TOKEN }} | base64 -d)
           # Redeploy homepage, bender, telegram-bot to new server
-          curl -Ss -X POST -u "${{secrets.CTX_GITHUB_PERSONAL_ACCESS_USERNAME }}:${{secrets.CTX_GITHUB_PERSONAL_ACCESS_TOKEN}}" \
+          curl -Ss -X POST -u "$GITHUB_USERNAME:$GITHUB_TOKEN" \
             -H "Accept: application/vnd.github.v3+json" \
             https://api.github.com/repos/ackersonde/ackerson.de-go/actions/workflows/build.yml/dispatches \
             -d '{"ref":"master"}'
-          # curl -Ss -X POST -u "${{secrets.CTX_GITHUB_PERSONAL_ACCESS_USERNAME}}:${{secrets.CTX_GITHUB_PERSONAL_ACCESS_TOKEN}}" \
+          # curl -Ss -X POST -u "$GITHUB_USERNAME:$GITHUB_TOKEN" \
           #   -H "Accept: application/vnd.github.v3+json" \
           #   https://api.github.com/repos/ackersonde/bender-slackbot/actions/workflows/build.yml/dispatches \
           #   -d '{"ref":"master"}'
-          # curl -Ss -X POST -u "${{secrets.CTX_GITHUB_PERSONAL_ACCESS_USERNAME}}:${{secrets.CTX_GITHUB_PERSONAL_ACCESS_TOKEN}}" \
+          # curl -Ss -X POST -u "$GITHUB_USERNAME:$GITHUB_TOKEN" \
           #   -H "Accept: application/vnd.github.v3+json" \
           #   https://api.github.com/repos/ackersonde/telegram-bot/actions/workflows/build.yml/dispatches \
           #   -d '{"ref":"main"}'
-          # curl -Ss -X POST -u "${{secrets.CTX_GITHUB_PERSONAL_ACCESS_USERNAME}}:${{secrets.CTX_GITHUB_PERSONAL_ACCESS_TOKEN}}" \
+          # curl -Ss -X POST -u "$GITHUB_USERNAME:$GITHUB_TOKEN" \
           #   -H "Accept: application/vnd.github.v3+json" \
           #   https://api.github.com/repos/ackersonde/hsm-planb.de/actions/workflows/build.yml/dispatches \
           #   -d '{"ref":"master"}'
 
-          rm hetznerhome_ubuntu_userdata.sh ~/.ssh/* /tmp/new_hetzner_server_params
+          rm ubuntu_userdata.sh ~/.ssh/* /tmp/new_hetzner_server_params
 
           curl -s -o /dev/null -X POST -d token=${{ secrets.ORG_SLACK_NOTIFICATIONS_TOKEN }} -d channel=C092UE0H4 \
             -d text="<https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID|$GITHUB_REPOSITORY @ $GITHUB_RUN_ID>" \

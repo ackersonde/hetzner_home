@@ -16,7 +16,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ackersonde/digitaloceans/common"
+	"github.com/ackersonde/hetzner_home/hetznercloud"
 	"github.com/hetznercloud/hcloud-go/hcloud"
 	"golang.org/x/crypto/ssh"
 )
@@ -25,11 +25,11 @@ var sshPrivateKeyFilePath = "/home/runner/.ssh/id_rsa"
 var envFile = "/tmp/new_hetzner_server_params"
 
 func main() {
-	client := hcloud.NewClient(hcloud.WithToken(os.Getenv("ORG_HETZNER_CLOUD_API_TOKEN")))
+	client := hcloud.NewClient(hcloud.WithToken(hetznercloud.HETZNER_API_TOKEN))
 
 	fnPtr := flag.String("fn", "createServer|cleanupDeploy|firewallSSH|createSnapshot|checkServer", "which function to run")
 	ipPtr := flag.String("ip", "<internet ip addr of github action instance>", "see prev param")
-	tagPtr := flag.String("tag", "traefik", "label with which to associate this resource")
+	tagPtr := flag.String("tag", "traefik", "label with which to associate this resource") // TODO: should be 'vault' or 'homepage' depending on instance req'd
 	serverPtr := flag.Int("serverID", 0, "server ID to check")
 	flag.Parse()
 
@@ -104,7 +104,7 @@ func checkServerPowerSwitch(client *hcloud.Client, serverID int) {
 }
 
 func listVolume(client *hcloud.Client) {
-	volumeID, _ := strconv.Atoi(os.Getenv("CTX_HETZNER_VAULT_VOLUME_ID"))
+	volumeID, _ := strconv.Atoi(hetznercloud.HETZNER_VAULT_VOLUME_ID)
 	volume, _, err := client.Volume.GetByID(context.Background(), volumeID)
 	if err != nil {
 		log.Fatalf("error retrieving volume: %s\n", err)
@@ -121,13 +121,18 @@ func createServer(client *hcloud.Client, instanceTag string) {
 
 	// find existing server
 	existingServer := getExistingServer(client, instanceTag)
+	volumeID := 0
 
-	// detach existing volume
-	volumeID, _ := strconv.Atoi(os.Getenv("CTX_HETZNER_VAULT_VOLUME_ID"))
-	volume, _, _ := client.Volume.GetByID(ctx, volumeID)
-	action, _, _ := client.Volume.Detach(ctx, volume)
-	if action != nil {
-		client.Action.WatchProgress(ctx, action)
+	// TODO: refactor this to instanceTag to "vault" after fixing hetzner_vault repo
+	// also: change the firewall-vault label from traefik to vault!
+	if instanceTag == "traefik" {
+		// detach existing volume
+		volumeID, _ = strconv.Atoi(hetznercloud.HETZNER_VAULT_VOLUME_ID)
+		volume, _, _ := client.Volume.GetByID(ctx, volumeID)
+		action, _, _ := client.Volume.Detach(ctx, volume)
+		if action != nil {
+			client.Action.WatchProgress(ctx, action)
+		}
 	}
 
 	// prepare new server
@@ -138,17 +143,23 @@ func createServer(client *hcloud.Client, instanceTag string) {
 
 	timestamp := strconv.FormatInt(time.Now().Unix(), 10)
 
-	result, _, err := client.Server.Create(ctx, hcloud.ServerCreateOpts{
+	serverOpts := hcloud.ServerCreateOpts{
 		Name:       "h" + os.Getenv("GITHUB_RUN_ID") + "-" + timestamp + ".ackerson.de",
 		ServerType: &hcloud.ServerType{ID: 22},  // AMD 2 core, 2GB Ram
-		Image:      &hcloud.Image{ID: 15512617}, // ubuntu-20.04
+		Image:      &hcloud.Image{ID: 67794396}, // ubuntu-22.04
 		Location:   &hcloud.Location{Name: "nbg1"},
 		Labels:     map[string]string{"label": instanceTag},
-		Volumes:    []*hcloud.Volume{{ID: volumeID}},
 		Automount:  Bool(false),
 		UserData:   string(ubuntuUserData),
 		SSHKeys:    []*hcloud.SSHKey{deploymentKey},
-	})
+	}
+
+	// TODO: refactor this to instanceTag to "vault" after fixing hetzner_vault repo
+	// also: change the firewall-vault label from traefik to vault!
+	if instanceTag == "traefik" {
+		serverOpts.Volumes = []*hcloud.Volume{{ID: volumeID}}
+	}
+	result, _, err := client.Server.Create(ctx, serverOpts)
 	if err != nil {
 		log.Fatalf("*** unable to create server: %s\n", err)
 	}
@@ -209,12 +220,13 @@ func cleanupDeploy(client *hcloud.Client, serverID int, instanceTag string) {
 
 	removeDeploymentFirewalls(client, ctx, instanceTag, "access=github")
 
-	server, _, _ := client.Server.GetByID(ctx, serverID)
+	// TODO: reenable this after you are ready to flip the switch!
+	/*server, _, _ := client.Server.GetByID(ctx, serverID)
 	// Update DNS entries @ DigitalOcean
 	if server != nil {
 		common.UpdateDNSentry(server.PublicNet.IPv6.IP.String()+"1", "ackerson.de", 294257276)
 		common.UpdateDNSentry(server.PublicNet.IPv4.IP.String(), "ackerson.de", 294257241)
-	}
+	}*/
 }
 
 func removeDeploymentFirewalls(client *hcloud.Client, ctx context.Context, instanceTag string, firewallTag string) {
