@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ackersonde/digitaloceans/common"
 	"github.com/ackersonde/hetzner_home/hetznercloud"
 	"github.com/hetznercloud/hcloud-go/hcloud"
 	"golang.org/x/crypto/ssh"
@@ -222,13 +223,12 @@ func cleanupDeploy(client *hcloud.Client, serverID int, instanceTag string) {
 
 	removeDeploymentFirewalls(client, ctx, instanceTag, "access=github")
 
-	// TODO: reenable this after you are ready to flip the switch!
-	/*server, _, _ := client.Server.GetByID(ctx, serverID)
+	server, _, _ := client.Server.GetByID(ctx, serverID)
 	// Update DNS entries @ DigitalOcean
 	if server != nil {
 		common.UpdateDNSentry(server.PublicNet.IPv6.IP.String()+"1", "ackerson.de", 294257276)
 		common.UpdateDNSentry(server.PublicNet.IPv4.IP.String(), "ackerson.de", 294257241)
-	}*/
+	}
 }
 
 func removeDeploymentFirewalls(client *hcloud.Client, ctx context.Context, instanceTag string, firewallTag string) {

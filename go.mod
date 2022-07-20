@@ -8,6 +8,14 @@ require (
 )
 
 require (
+	github.com/digitalocean/godo v1.78.0 // indirect
+	github.com/google/go-querystring v1.1.0 // indirect
+	golang.org/x/oauth2 v0.0.0-20220411215720-9780585627b5 // indirect
+	google.golang.org/appengine v1.6.7 // indirect
+)
+
+require (
+	github.com/ackersonde/digitaloceans v0.0.0-20220715154550-1f1a7c9c4581
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
