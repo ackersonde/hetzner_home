@@ -123,12 +123,12 @@ jobs:
 
           # New server is up and running - prepare the old one for death
           # retrieve current deployment priv key
-          echo ${{ secrets.HETZNER_SSH_PRIVKEY }} | base64 -d | tee ~/.ssh/id_rsa_old
+          cat <<EOF >~/.ssh/id_rsa_old
+          echo ${{ secrets.HETZNER_SSH_PRIVKEY }}
+          EOF
           chmod 400 ~/.ssh/id_rsa_old
 
           export SLACK_NOTIFY_TOKEN=$(echo ${{ secrets.ORG_SLACK_NOTIFICATIONS_TOKEN }} | base64 -d)
-          echo "XXXXXX: exported TOKEN XXXXXX"
-          ls -lrt
 
           # update PRIVKEY to new one for subsequent deployments
           # grab github.py from pi-ops repo
@@ -140,7 +140,7 @@ jobs:
           export GITHUB_SECRETS_PK_PEM=$(echo ${{ secrets.ORG_GITHUB_SECRETS_PK_PEM }} | base64 -d)
           python -m pip install --upgrade pip
           pip install -r scripts/requirements.txt
-          python scripts/update_github_secret.py --name HETZNER_SSH_PRIVKEY -f ~/.ssh/id_rsa
+          python scripts/update_github_secret.py --name HETZNER_SSH_PRIVKEY -b true -f ~/.ssh/id_rsa
 
           # perform final cleanup
           # ./hetzner -fn=cleanupDeploy -serverID=$NEW_SERVER_ID -tag=homepage # if serverID provided, update DNS too!
