@@ -123,10 +123,8 @@ jobs:
 
           # New server is up and running - prepare the old one for death
           # retrieve current deployment priv key
-          # cat <<EOF >~/.ssh/id_rsa_old
-          # $(echo ${{ secrets.HETZNER_SSH_PRIVKEY }} | base64 -d)
-          # EOF
-          # chmod 400 ~/.ssh/id_rsa_old
+          echo ${{ secrets.HETZNER_SSH_PRIVKEY }} | base64 -d | tee ~/.ssh/id_rsa_old
+          chmod 400 ~/.ssh/id_rsa_old
 
           export SLACK_NOTIFY_TOKEN=$(echo ${{ secrets.ORG_SLACK_NOTIFICATIONS_TOKEN }} | base64 -d)
           echo "XXXXXX: exported TOKEN XXXXXX"
@@ -136,7 +134,7 @@ jobs:
           #  -d text="vfa update $NEW_SERVER_IPV6,$NEW_SERVER_IPV4" https://slack.com/api/chat.postMessage
 
           # Use existing server to update new firewall rules for home network & vault instance
-          envsubst '${MASTER_HOST} ${SLAVE_HOST} ${BUILD_HOST} ${NEW_SERVER_IPV6} ${OLD_SERVER_IPV6}' < scripts/firewall_rules.sh > fw_rules.sh
+          # envsubst '${MASTER_HOST} ${SLAVE_HOST} ${BUILD_HOST} ${NEW_SERVER_IPV6} ${OLD_SERVER_IPV6}' < scripts/firewall_rules.sh > fw_rules.sh
           # if scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_old fw_rules.sh root@ackerson.de:~/ ; then
           #   if ! ssh -i ~/.ssh/id_rsa_old root@ackerson.de /bin/bash /root/fw_rules.sh ; then
           #     curl -s -o /dev/null -X POST -d token=$SLACK_NOTIFY_TOKEN -d channel=C092UE0H4 \
@@ -147,7 +145,7 @@ jobs:
           #   curl -s -o /dev/null -X POST -d token=$SLACK_NOTIFY_TOKEN -d channel=C092UE0H4 \
           #     -d text="Unable to reach ackerson.de => Perhaps this is first run?" https://slack.com/api/chat.postMessage
           # fi
-          echo "XXXXXX: substituted some vars XXXXXX"
+
           # update PRIVKEY to new one for subsequent deployments
           # grab github.py from pi-ops repo
           curl -o scripts/github.py https://raw.githubusercontent.com/ackersonde/pi-ops/master/scripts/secrets/github.py
