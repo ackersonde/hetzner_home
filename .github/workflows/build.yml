@@ -128,23 +128,7 @@ jobs:
 
           export SLACK_NOTIFY_TOKEN=$(echo ${{ secrets.ORG_SLACK_NOTIFICATIONS_TOKEN }} | base64 -d)
           echo "XXXXXX: exported TOKEN XXXXXX"
-
-          # update Vault CIDRs with new addresses
-          # curl -s -X POST -d token=$SLACK_NOTIFY_TOKEN -d channel=C33QYV3PW \
-          #  -d text="vfa update $NEW_SERVER_IPV6,$NEW_SERVER_IPV4" https://slack.com/api/chat.postMessage
-
-          # Use existing server to update new firewall rules for home network & vault instance
-          # envsubst '${MASTER_HOST} ${SLAVE_HOST} ${BUILD_HOST} ${NEW_SERVER_IPV6} ${OLD_SERVER_IPV6}' < scripts/firewall_rules.sh > fw_rules.sh
-          # if scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_old fw_rules.sh root@ackerson.de:~/ ; then
-          #   if ! ssh -i ~/.ssh/id_rsa_old root@ackerson.de /bin/bash /root/fw_rules.sh ; then
-          #     curl -s -o /dev/null -X POST -d token=$SLACK_NOTIFY_TOKEN -d channel=C092UE0H4 \
-          #       -d text="Failed to update firewall rules: ${OLD_SERVER_IPV6} => ${NEW_SERVER_IPV6}" \
-          #       https://slack.com/api/chat.postMessage
-          #   fi
-          # else
-          #   curl -s -o /dev/null -X POST -d token=$SLACK_NOTIFY_TOKEN -d channel=C092UE0H4 \
-          #     -d text="Unable to reach ackerson.de => Perhaps this is first run?" https://slack.com/api/chat.postMessage
-          # fi
+          ls -lrt
 
           # update PRIVKEY to new one for subsequent deployments
           # grab github.py from pi-ops repo
@@ -162,13 +146,13 @@ jobs:
           # ./hetzner -fn=cleanupDeploy -serverID=$NEW_SERVER_ID -tag=homepage # if serverID provided, update DNS too!
           ./hetzner -fn=cleanupDeploy -tag=homepage
 
-          GITHUB_USERNAME=$(echo ${{ secrets.ORG_GITHUB_PERSONAL_ACCESS_USERNAME }} | base64 -d)
-          GITHUB_TOKEN=$(echo ${{ secrets.ORG_GITHUB_PERSONAL_ACCESS_TOKEN }} | base64 -d)
+          export GITHUB_USERNAME=$(echo ${{ secrets.ORG_GITHUB_PERSONAL_ACCESS_USERNAME }} | base64 -d)
+          export GITHUB_TOKEN=$(echo ${{ secrets.ORG_GITHUB_PERSONAL_ACCESS_TOKEN }} | base64 -d)
           # Redeploy homepage, bender, telegram-bot to new server
           curl -Ss -X POST -u "$GITHUB_USERNAME:$GITHUB_TOKEN" \
             -H "Accept: application/vnd.github.v3+json" \
             https://api.github.com/repos/ackersonde/ackerson.de-go/actions/workflows/build.yml/dispatches \
-            -d '{"ref":"master", "ca_pub_fingerprint":"TADA"}'
+            -d '{"ref":"hetzner", "ca_pub_fingerprint":"TADA"}'
           # curl -Ss -X POST -u "$GITHUB_USERNAME:$GITHUB_TOKEN" \
           #   -H "Accept: application/vnd.github.v3+json" \
           #   https://api.github.com/repos/ackersonde/bender-slackbot/actions/workflows/build.yml/dispatches \
