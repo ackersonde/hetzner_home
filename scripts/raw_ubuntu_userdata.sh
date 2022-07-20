@@ -1,4 +1,6 @@
 #!/bin/bash
+mkdir -p /root/traefik/logs
+
 echo -n "$SERVER_DEPLOY_CACERT_B64" | base64 -d | tee /root/.ssh/id_ed25519-cert.pub
 chmod 400 /root/.ssh/id_ed25519-cert.pub
 echo -n "$SERVER_DEPLOY_SECRET_B64" | base64 -d | tee /root/.ssh/id_ed25519

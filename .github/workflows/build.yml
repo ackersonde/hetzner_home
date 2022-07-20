@@ -67,9 +67,7 @@ jobs:
             sleep 3
           done
 
-          # prepare Traefik directory
           ssh -o StrictHostKeyChecking=no root@$NEW_SERVER_IPV4 "\
-            mkdir -p traefik/logs &&
             cloud-init status --wait > /dev/null 2>&1
             [ $? -ne 0 ] && echo 'Cloud-init failed' && exit 1
             echo 'Cloud-init succeeded at ' `date -R`  > ~/post-cloud-init.log"
@@ -83,9 +81,9 @@ jobs:
             docker run -d --restart=always \
               -e DO_AUTH_TOKEN=$(echo ${{ secrets.ORG_DIGITALOCEAN_DNS_TOKEN }} | base64 -d) \
               -v /var/run/docker.sock:/var/run/docker.sock:ro \
-              -v ~/traefik/logs:/var/log/traefik/ \
-              -v ~/traefik/acme.json:/acme.json \
-              -v ~/traefik/dynamic_conf.yml:/dynamic_conf.yml \
+              -v /root/traefik/logs:/var/log/traefik/ \
+              -v /root/traefik/acme.json:/acme.json \
+              -v /root/traefik/dynamic_conf.yml:/dynamic_conf.yml \
               --label='traefik.enable=true' \
               --label='traefik.http.middlewares.api_auth.basicauth.users=$(echo ${{ secrets.ORG_CLOUD_SYNCTHING_BASIC_AUTH_USER }} | base64 -d):$(echo ${{ secrets.ORG_CLOUD_SYNCTHING_BASIC_AUTH_PASS }} | base64 -d)' \
               --label='traefik.http.routers.api.entrypoints=web,secure' \
