@@ -154,7 +154,7 @@ jobs:
           export GITHUB_SECRETS_PK_PEM=$(echo ${{ secrets.ORG_GITHUB_SECRETS_PK_PEM }} | base64 -d)
           python -m pip install --upgrade pip
           pip install -r scripts/requirements.txt
-          python scripts/update_github_secret.py --name HETZNER_SSH_PRIVKEY --storeB64 -f ~/.ssh/id_rsa
+          python scripts/update_github_secret.py --name HETZNER_SSH_PRIVKEY --storeB64 True -f ~/.ssh/id_rsa
 
           # perform final cleanup
           # ./hetzner -fn=cleanupDeploy -serverID=$NEW_SERVER_ID -tag=homepage # if serverID provided, update DNS too!
