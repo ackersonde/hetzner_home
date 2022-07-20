@@ -50,11 +50,9 @@ jobs:
           export MASTER_HOST=$(echo ${{ secrets.ORG_MASTER_HOST }} | base64 -d)
           export SLAVE_HOST=$(echo ${{ secrets.ORG_SLAVE_HOST }} | base64 -d)
           export SERVERS="ubuntu@$MASTER_HOST ubuntu@$SLAVE_HOST ackersond@$BUILD_HOST"
-          export GITHUB_APP_CLIENT_ID=$(echo ${{ secrets.ORG_GITHUB_APP_CLIENT_ID }} | base64 -d)
-          export GITHUB_SECRETS_PK_PEM=$(echo ${{ secrets.ORG_GITHUB_SECRETS_PK_PEM }} | base64 -d)
 
           mkdir ~/.ssh # for new RSA key created in next step
-          ./hetzner -fn=createNewServer -tag=homepage
+          ./hetzner -fn=createServer -tag=homepage
 
           public_ip_address=$(curl -s https://checkip.amazonaws.com)
           source /tmp/new_hetzner_server_params

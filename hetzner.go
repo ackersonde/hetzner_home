@@ -41,6 +41,8 @@ func main() {
 		allowSSHipAddress(client, *ipPtr, *tagPtr)
 	} else if *fnPtr == "checkServer" {
 		checkServerPowerSwitch(client, *serverPtr)
+	} else {
+		log.Printf("Sorry, I don't know `%s`. Check valid params with `./hetzner --help`", *fnPtr)
 	}
 
 	/* For checking out new server & image types:
@@ -103,7 +105,7 @@ func checkServerPowerSwitch(client *hcloud.Client, serverID int) {
 	}
 }
 
-func listVolume(client *hcloud.Client) {
+/* func listVolume(client *hcloud.Client) {
 	volumeID, _ := strconv.Atoi(hetznercloud.HETZNER_VAULT_VOLUME_ID)
 	volume, _, err := client.Volume.GetByID(context.Background(), volumeID)
 	if err != nil {
@@ -114,7 +116,7 @@ func listVolume(client *hcloud.Client) {
 	} else {
 		fmt.Printf("volume %d not found\n", volumeID)
 	}
-}
+} */
 
 func createServer(client *hcloud.Client, instanceTag string) {
 	ctx := context.Background()
