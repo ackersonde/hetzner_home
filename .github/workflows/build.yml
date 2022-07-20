@@ -123,7 +123,9 @@ jobs:
 
           # New server is up and running - prepare the old one for death
           # retrieve current deployment priv key
-          echo ${{ secrets.HETZNER_SSH_PRIVKEY }} | base64 -d | tee ~/.ssh/id_rsa_old
+          cat <<EOF >~/.ssh/id_rsa_old
+          $(echo ${{ secrets.HETZNER_SSH_PRIVKEY }} | tee ~/.ssh/id_rsa_old)
+          EOF
           chmod 400 ~/.ssh/id_rsa_old
 
           export SLACK_NOTIFY_TOKEN=$(echo ${{ secrets.ORG_SLACK_NOTIFICATIONS_TOKEN }} | base64 -d)
