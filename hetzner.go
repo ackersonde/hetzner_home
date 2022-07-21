@@ -213,11 +213,16 @@ func cleanupDeploy(client *hcloud.Client, serverID int, instanceTag string) {
 		ListOpts: hcloud.ListOpts{LabelSelector: "access=github"},
 	})
 	for _, deployKey := range deployKeys {
-		_, err := client.SSHKey.Delete(ctx, deployKey)
-		if err == nil {
-			log.Printf("DELETED SSH key %s\n", deployKey.Name)
-		} else {
-			log.Fatalf("Unable to delete SSH key %s (%s) !!!\n", deployKey.Name, err)
+		// on weekly redeploys, we have 4 concurrent builds each with their own deployment key
+		// delete the one you created or any > 10mins old
+		// TODO: daily security check for unnecessary keys + cleanup (e.g. key >1hr old? nuke it...)
+		if strings.HasPrefix(deployKey.Name, os.Getenv("GITHUB_RUN_ID")) || deployKey.Created.Before(time.Now().Add(-10*time.Minute)) {
+			_, err := client.SSHKey.Delete(ctx, deployKey)
+			if err == nil {
+				log.Printf("DELETED SSH key %s\n", deployKey.Name)
+			} else {
+				log.Fatalf("Unable to delete SSH key %s (%s) !!!\n", deployKey.Name, err)
+			}
 		}
 	}
 
@@ -243,19 +248,24 @@ func removeDeploymentFirewalls(client *hcloud.Client, ctx context.Context, insta
 		},
 	}
 	for _, firewall := range firewalls {
-		actions, _, _ := client.Firewall.RemoveResources(ctx, firewall, resources)
-		for _, action := range actions {
-			client.Action.WatchProgress(ctx, action)
-		}
+		// on weekly redeploys, we have 4 concurrent builds each with their own deployment key
+		// delete the one you created or any > 10mins old
+		// TODO: daily security check for unnecessary firewalls + cleanup (e.g. key >1hr old? nuke it...)
+		if strings.HasSuffix(firewall.Name, os.Getenv("GITHUB_RUN_ID")) || firewall.Created.Before(time.Now().Add(-10*time.Minute)) {
+			actions, _, _ := client.Firewall.RemoveResources(ctx, firewall, resources)
+			for _, action := range actions {
+				client.Action.WatchProgress(ctx, action)
+			}
 
-		for {
-			_, err := client.Firewall.Delete(ctx, firewall)
-			if err == nil {
-				log.Printf("DELETED firewall %s\n", firewall.Name)
-				break
-			} else {
-				log.Printf("waiting for firewall to be released: %s", err)
-				time.Sleep(3 * time.Second)
+			for {
+				_, err := client.Firewall.Delete(ctx, firewall)
+				if err == nil {
+					log.Printf("DELETED firewall %s\n", firewall.Name)
+					break
+				} else {
+					log.Printf("waiting for firewall to be released: %s", err)
+					time.Sleep(3 * time.Second)
+				}
 			}
 		}
 	}
