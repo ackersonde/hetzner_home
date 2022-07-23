@@ -71,10 +71,10 @@ jobs:
             [ $? -ne 0 ] && echo 'Cloud-init failed' && exit 1
             echo 'Cloud-init succeeded at ' `date -R`  > ~/post-cloud-init.log"
 
-          echo "${{ secrets.ORG_TLS_ACKDE_CRT }}" | base64 -d | tee ackde.crt
-          echo "${{ secrets.ORG_TLS_ACKDE_KEY }}" | base64 -d | tee ackde.key
-          echo "${{ secrets.ORG_TLS_HAUSM_CRT }}" | base64 -d | tee hausm.crt
-          echo "${{ secrets.ORG_TLS_HAUSM_KEY }}" | base64 -d | tee hausm.key
+          echo "${{ secrets.ORG_TLS_ACKDE_CRT }}" | base64 -d | tee ackde.crt >/dev/null
+          echo "${{ secrets.ORG_TLS_ACKDE_KEY }}" | base64 -d | tee ackde.key >/dev/null
+          echo "${{ secrets.ORG_TLS_HAUSM_CRT }}" | base64 -d | tee hausm.crt >/dev/null
+          echo "${{ secrets.ORG_TLS_HAUSM_KEY }}" | base64 -d | tee hausm.key >/dev/null
           scp *.crt root@$NEW_SERVER_IPV4:/root/traefik/certs/
           scp *.key root@$NEW_SERVER_IPV4:/root/traefik/keys/
           scp scripts/dynamic_conf.yml root@$NEW_SERVER_IPV4:/root/traefik/
