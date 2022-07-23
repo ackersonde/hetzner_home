@@ -40,11 +40,7 @@ Unattended-Upgrade::Allowed-Origins {
     "\${distro_id} \${distro_codename}-security";
     "\${distro_id} \${distro_codename}-updates";
 };
-// Do automatic removal of new unused dependencies after the upgrade
-// (equivalent to apt-get autoremove)
 Unattended-Upgrade::Remove-Unused-Dependencies "true";
-// Automatically reboot *WITHOUT CONFIRMATION* if a
-// the file /var/run/reboot-required is found after the upgrade
 Unattended-Upgrade::Automatic-Reboot "true";
 Unattended-Upgrade::Automatic-Reboot-Time "05:00";
 EOF
