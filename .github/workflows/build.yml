@@ -42,9 +42,8 @@ jobs:
           export SYNCTHING_KEY=$(echo ${{ secrets.ORG_CLOUD_SYNCTHING_KEY }} | base64 -d)
           export SYNCTHING_CERT=$(echo ${{ secrets.ORG_CLOUD_SYNCTHING_CERT }} | base64 -d)
           export TITAN_PUBLIC_KEY=$(echo ${{ secrets.ORG_TITAN_PUBLIC_KEY }} | base64 -d)
-          export ACME_JSON_64=${{ secrets.ORG_ACME_JSON }}
 
-          envsubst '$SERVER_DEPLOY_CACERT_B64, $SERVER_DEPLOY_SECRET_B64, $SERVER_DEPLOY_PUBLIC_B64, $TITAN_PUBLIC_KEY, $ACME_JSON_64, $SYNCTHING_CONFIG_B64, $SYNCTHING_KEY, $SYNCTHING_CERT' < scripts/raw_ubuntu_userdata.sh >ubuntu_userdata.sh
+          envsubst '$SERVER_DEPLOY_CACERT_B64, $SERVER_DEPLOY_SECRET_B64, $SERVER_DEPLOY_PUBLIC_B64, $TITAN_PUBLIC_KEY, $SYNCTHING_CONFIG_B64, $SYNCTHING_KEY, $SYNCTHING_CERT' < scripts/raw_ubuntu_userdata.sh >ubuntu_userdata.sh
 
           export BUILD_HOST=$(echo ${{ secrets.ORG_BUILD_HOST }} | base64 -d)
           export MASTER_HOST=$(echo ${{ secrets.ORG_MASTER_HOST }} | base64 -d)
@@ -72,6 +71,12 @@ jobs:
             [ $? -ne 0 ] && echo 'Cloud-init failed' && exit 1
             echo 'Cloud-init succeeded at ' `date -R`  > ~/post-cloud-init.log"
 
+          echo "${{ secrets.ORG_TLS_ACKDE_CRT }}" | base64 -d | tee ackde.crt
+          echo "${{ secrets.ORG_TLS_ACKDE_KEY }}" | base64 -d | tee ackde.key
+          echo "${{ secrets.ORG_TLS_HAUSM_CRT }}" | base64 -d | tee hausm.crt
+          echo "${{ secrets.ORG_TLS_HAUSM_KEY }}" | base64 -d | tee hausm.key
+          scp *.crt root@$NEW_SERVER_IPV4:~/traefik/certs/
+          scp *.key root@$NEW_SERVER_IPV4:~/traefik/keys/
           scp scripts/dynamic_conf.yml root@$NEW_SERVER_IPV4:~/traefik/
           scp /home/runner/.ssh/id_rsa root@$NEW_SERVER_IPV4:~/.ssh/
 
@@ -81,7 +86,8 @@ jobs:
             docker run -d --restart=always \
               -v /var/run/docker.sock:/var/run/docker.sock:ro \
               -v /root/traefik/logs:/var/log/traefik/ \
-              -v /root/traefik/acme.json:/acme.json \
+              -v /root/traefik/certs:/certs/ \
+              -v /root/traefik/keys:/keys/ \
               -v /root/traefik/dynamic_conf.yml:/dynamic_conf.yml \
               --label='traefik.enable=true' \
               --label='traefik.http.middlewares.api_auth.basicauth.users=$(echo ${{ secrets.ORG_CLOUD_SYNCTHING_BASIC_AUTH_USER }} | base64 -d):$(echo ${{ secrets.ORG_CLOUD_SYNCTHING_BASIC_AUTH_PASS }} | base64 -d)' \
@@ -89,7 +95,6 @@ jobs:
               --label='traefik.http.routers.api.middlewares=http-ratelimit@file,secHeaders@file,api_auth' \
               --label='traefik.http.routers.api.rule=Host(\`monitor.ackerson.de\`)' \
               --label='traefik.http.routers.api.service=api@internal' \
-              --label='traefik.http.routers.api.tls.certResolver=letsencrypt' \
               --label='traefik.http.routers.api.tls.domains=monitor.ackerson.de' \
               --label='traefik.http.routers.https-redirect.rule=HostRegexp(\`{any:.*}\`)' \
               --label='traefik.http.routers.https-redirect.middlewares=https-redirect@docker' \
@@ -103,8 +108,6 @@ jobs:
               --entrypoints.web.address=:80 --entrypoints.secure.address=:443 \
               --entryPoints.web.forwardedHeaders.trustedIPs=172.17.0.1/24,fd00::/80 \
               --entryPoints.secure.forwardedHeaders.trustedIPs=172.17.0.1/24,fd00::/80 \
-              --certificatesResolvers.letsencrypt.acme.email=dan@ackerson.de \
-              --certificatesResolvers.letsencrypt.acme.storage=/acme.json \
             docker run -d --restart=always \
               -v /root/syncthing:/var/syncthing --hostname=$(echo ${{ secrets.ORG_CLOUD_SYNCTHING_HOSTNAME }} | base64 -d) \
               --label='traefik.enable=true' \
@@ -177,7 +180,7 @@ jobs:
           # so you can't autodeploy addtl, new repos w/o refactoring the whole shebang
           # (e.g. only have one github-deploy FW which gets deleted after it's >10mins old?): end WARNING
 
-          rm ubuntu_userdata.sh ~/.ssh/* /tmp/new_hetzner_server_params
+          rm ubuntu_userdata.sh *.crt *.key ~/.ssh/* /tmp/new_hetzner_server_params
 
           curl -s -o /dev/null -X POST -d token=$SLACK_NOTIFY_TOKEN -d channel=C092UE0H4 \
             -d text="<https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID|$GITHUB_REPOSITORY @ $GITHUB_RUN_ID>" \

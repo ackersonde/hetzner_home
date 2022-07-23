@@ -145,7 +145,7 @@ func createServer(client *hcloud.Client, instanceTag string) {
 	timestamp := strconv.FormatInt(time.Now().Unix(), 10)
 
 	serverOpts := hcloud.ServerCreateOpts{
-		Name:       "h" + os.Getenv("GITHUB_RUN_ID") + "-" + timestamp + ".ackerson.de",
+		Name:       instanceTag + "_id" + os.Getenv("GITHUB_RUN_ID") + "-" + timestamp + ".ackerson.de",
 		ServerType: &hcloud.ServerType{ID: 22},  // AMD 2 core, 2GB Ram
 		Image:      &hcloud.Image{ID: 67794396}, // ubuntu-22.04
 		Location:   &hcloud.Location{Name: "nbg1"},

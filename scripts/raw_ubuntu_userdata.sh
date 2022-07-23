@@ -7,8 +7,6 @@ echo -n "$SERVER_DEPLOY_SECRET_B64" | base64 -d | tee /root/.ssh/id_ed25519
 chmod 400 /root/.ssh/id_ed25519
 echo -n "$SERVER_DEPLOY_PUBLIC_B64" | base64 -d | tee -a /root/.ssh/authorized_keys
 echo -n "$TITAN_PUBLIC_KEY" | tee -a /root/.ssh/authorized_keys
-echo -n "$ACME_JSON_B64" | base64 -d | tee /root/traefik/acme.json
-chmod 600 /root/traefik/acme.json
 
 # Setup Syncthing config
 mkdir -p /root/syncthing/config /root/syncthing/2086h-4d0t2

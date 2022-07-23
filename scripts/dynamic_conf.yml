@@ -1,8 +1,12 @@
 tls:
+  certificates:
+    - certFile: /certs/ackde.crt
+      keyFile: /keys/ackde.key
+    - certFile: /certs/hausm.crt
+      keyFile: /keys/hausm.key
   options:
     default:
       minVersion: VersionTLS12
-
       cipherSuites:
         - TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
         - TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
@@ -10,13 +14,10 @@ tls:
         - TLS_AES_128_GCM_SHA256
         - TLS_AES_256_GCM_SHA384
         - TLS_CHACHA20_POLY1305_SHA256
-
       curvePreferences:
         - CurveP521
         - CurveP384
-
       sniStrict: true
-
 
 http:
   middlewares:
@@ -25,7 +26,6 @@ http:
         average: 100
         burst: 50
         period: 3s
-
     secHeaders:
       headers:
         browserXssFilter: true
