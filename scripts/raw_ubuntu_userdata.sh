@@ -27,20 +27,29 @@ EOF
 chmod 644 /root/syncthing/config/cert.pem
 chown -R 1000:1000 /root/syncthing
 
-touch ~/.hushlogin
-
-# prepare iptables persistence and unattended-upgrades install settings
+# prepare unattended-upgrades settings
 debconf-set-selections <<EOF
 iptables-persistent iptables-persistent/autosave_v4 boolean true
 iptables-persistent iptables-persistent/autosave_v6 boolean true
 unattended-upgrades unattended-upgrades/enable_auto_updates boolean true
 EOF
-
-# allow docker containers to talk to the internet
-ip6tables -t nat -A POSTROUTING -s fd00::/80 ! -o docker0 -j MASQUERADE
 dpkg-reconfigure -f noninteractive unattended-upgrades
+cat > /etc/apt/apt.conf.d/50unattended-upgrades << EOF
+Unattended-Upgrade::Allowed-Origins {
+    "\${distro_id} stable";
+    "\${distro_id} \${distro_codename}-security";
+    "\${distro_id} \${distro_codename}-updates";
+};
+// Do automatic removal of new unused dependencies after the upgrade
+// (equivalent to apt-get autoremove)
+Unattended-Upgrade::Remove-Unused-Dependencies "true";
+// Automatically reboot *WITHOUT CONFIRMATION* if a
+// the file /var/run/reboot-required is found after the upgrade
+Unattended-Upgrade::Automatic-Reboot "true";
+Unattended-Upgrade::Automatic-Reboot-Time "05:00";
+EOF
 
-apt-get -y remove docker docker-engine docker.io containerd runc
+# prepare and start wireguard
 apt-get update
 apt-get -y install wireguard ca-certificates curl gnupg lsb-release iptables-persistent do-agent
 
@@ -57,6 +66,11 @@ AllowedIPs = 10.9.0.2/32,fd42:42:42::2/128
 PresharedKey = {{WG_DO_HOME_PRESHAREDKEY}}
 EOF
 
+/usr/bin/wg-quick up wg
+systemctl enable wg-quick@wg.service
+
+# prepare and start docker-ce
+apt-get -y remove docker docker-engine docker.io containerd runc
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
 echo \
   "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
@@ -76,20 +90,4 @@ cat > /etc/docker/daemon.json <<EOF
 EOF
 systemctl restart docker
 
-cat > /etc/apt/apt.conf.d/50unattended-upgrades << EOF
-Unattended-Upgrade::Allowed-Origins {
-    "\${distro_id} stable";
-    "\${distro_id} \${distro_codename}-security";
-    "\${distro_id} \${distro_codename}-updates";
-};
-// Do automatic removal of new unused dependencies after the upgrade
-// (equivalent to apt-get autoremove)
-Unattended-Upgrade::Remove-Unused-Dependencies "true";
-// Automatically reboot *WITHOUT CONFIRMATION* if a
-// the file /var/run/reboot-required is found after the upgrade
-Unattended-Upgrade::Automatic-Reboot "true";
-Unattended-Upgrade::Automatic-Reboot-Time "05:00";
-EOF
-
-/usr/bin/wg-quick up wg
-systemctl enable wg-quick@wg.service
+touch ~/.hushlogin

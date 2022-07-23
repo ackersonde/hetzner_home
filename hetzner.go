@@ -30,7 +30,7 @@ func main() {
 
 	fnPtr := flag.String("fn", "createServer|cleanupDeploy|firewallSSH|createSnapshot|checkServer", "which function to run")
 	ipPtr := flag.String("ip", "<internet ip addr of github action instance>", "see prev param")
-	tagPtr := flag.String("tag", "traefik", "label with which to associate this resource") // TODO: should be 'vault' or 'homepage' depending on instance req'd
+	tagPtr := flag.String("tag", "homepage|vault", "label with which to associate this resource")
 	serverPtr := flag.Int("serverID", 0, "server ID to check")
 	flag.Parse()
 
@@ -126,9 +126,7 @@ func createServer(client *hcloud.Client, instanceTag string) {
 	existingServer := getExistingServer(client, instanceTag)
 	volumeID := 0
 
-	// TODO: refactor this to instanceTag to "vault" after fixing hetzner_vault repo
-	// also: change the firewall-vault label from traefik to vault!
-	if instanceTag == "traefik" {
+	if instanceTag == "vault" {
 		// detach existing volume
 		volumeID, _ = strconv.Atoi(hetznercloud.HETZNER_VAULT_VOLUME_ID)
 		volume, _, _ := client.Volume.GetByID(ctx, volumeID)
@@ -157,9 +155,7 @@ func createServer(client *hcloud.Client, instanceTag string) {
 		SSHKeys:    []*hcloud.SSHKey{deploymentKey},
 	}
 
-	// TODO: refactor this to instanceTag to "vault" after fixing hetzner_vault repo
-	// also: change the firewall-vault label from traefik to vault!
-	if instanceTag == "traefik" {
+	if instanceTag == "vault" {
 		serverOpts.Volumes = []*hcloud.Volume{{ID: volumeID}}
 	}
 	result, _, err := client.Server.Create(ctx, serverOpts)
@@ -172,7 +168,7 @@ func createServer(client *hcloud.Client, instanceTag string) {
 		existingServerVars := ""
 		if existingServer.Name != "" {
 			existingServerVars = "\nexport OLD_SERVER_IPV6=" +
-				existingServer.PublicNet.IPv6.IP.String()
+				existingServer.PublicNet.IPv6.IP.String() + "1"
 
 			// update existingServer Label with "delete":"true" !
 			client.Server.Update(ctx, existingServer, hcloud.ServerUpdateOpts{
@@ -183,7 +179,7 @@ func createServer(client *hcloud.Client, instanceTag string) {
 		// Write key metadata from existing/new servers
 		envVarsFile := []byte(
 			"export NEW_SERVER_IPV4=" + result.Server.PublicNet.IPv4.IP.String() +
-				"\nexport NEW_SERVER_IPV6=" + result.Server.PublicNet.IPv6.IP.String() +
+				"\nexport NEW_SERVER_IPV6=" + result.Server.PublicNet.IPv6.IP.String() + "1" +
 				"\nexport NEW_SERVER_ID=" + strconv.Itoa(result.Server.ID) +
 				existingServerVars)
 
@@ -230,9 +226,16 @@ func cleanupDeploy(client *hcloud.Client, serverID int, instanceTag string) {
 
 	server, _, _ := client.Server.GetByID(ctx, serverID)
 	// Update DNS entries @ DigitalOcean
-	if server != nil && instanceTag == "homepage" {
-		common.UpdateDNSentry(server.PublicNet.IPv6.IP.String()+"1", "ackerson.de", 294257276)
-		common.UpdateDNSentry(server.PublicNet.IPv4.IP.String(), "ackerson.de", 294257241)
+	if server != nil {
+		if instanceTag == "homepage" {
+			common.UpdateDNSentry(server.PublicNet.IPv6.IP.String()+"1", "ackerson.de", 23738236)
+			common.UpdateDNSentry(server.PublicNet.IPv4.IP.String(), "ackerson.de", 23738257)
+			common.UpdateDNSentry(server.PublicNet.IPv6.IP.String()+"1", "hausmeisterservice-planb.de", 302721441)
+			common.UpdateDNSentry(server.PublicNet.IPv4.IP.String(), "hausmeisterservice-planb.de", 302721419)
+		} else if instanceTag == "vault" {
+			common.UpdateDNSentry(server.PublicNet.IPv6.IP.String()+"1", "ackerson.de", 294257276)
+			common.UpdateDNSentry(server.PublicNet.IPv4.IP.String(), "ackerson.de", 294257241)
+		}
 	}
 }
 
