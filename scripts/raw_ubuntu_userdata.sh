@@ -1,9 +1,9 @@
 #!/bin/bash
 mkdir -p /root/traefik/logs /root/traefik/certs /root/traefik/keys
 
-echo -n "$SERVER_DEPLOY_CACERT_B64" | base64 -d | tee /root/.ssh/id_ed25519-cert.pub
+echo -n "$SERVER_DEPLOY_CACERT_B64" | base64 -d | tee /root/.ssh/id_ed25519-cert.pub >/dev/null
 chmod 400 /root/.ssh/id_ed25519-cert.pub
-echo -n "$SERVER_DEPLOY_SECRET_B64" | base64 -d | tee /root/.ssh/id_ed25519
+echo -n "$SERVER_DEPLOY_SECRET_B64" | base64 -d | tee /root/.ssh/id_ed25519 >/dev/null
 chmod 400 /root/.ssh/id_ed25519
 echo -n "$SERVER_DEPLOY_PUBLIC_B64" | base64 -d | tee -a /root/.ssh/authorized_keys
 echo -n "$TITAN_PUBLIC_KEY" | tee -a /root/.ssh/authorized_keys
@@ -13,7 +13,7 @@ mkdir -p /root/syncthing/config /root/syncthing/2086h-4d0t2
 echo ".trashed-*" > /root/syncthing/2086h-4d0t2/.stignore
 echo "*.part" >> /root/syncthing/2086h-4d0t2/.stignore
 chmod 600 /root/syncthing/2086h-4d0t2/.stignore
-echo -n "$SYNCTHING_CONFIG_B64" | base64 -d | tee /root/syncthing/config/config.xml
+echo -n "$SYNCTHING_CONFIG_B64" | base64 -d | tee /root/syncthing/config/config.xml >/dev/null
 chmod 600 /root/syncthing/config/config.xml
 cat <<EOF > /root/syncthing/config/key.pem
 $SYNCTHING_KEY
@@ -68,7 +68,7 @@ apt-get -y remove docker docker-engine docker.io containerd runc
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
 echo \
   "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
-  $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+  $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list >/dev/null
 apt-get update
 apt-get -y install docker-ce docker-ce-cli containerd.io
 
