@@ -30,7 +30,7 @@ jobs:
           sed -i -e "s@{{WG_HOME_PUBLIC_KEY}}@$WG_HOME_PUBLIC_KEY@" scripts/raw_ubuntu_userdata.sh
           sed -i -e "s@{{WG_DO_HOME_PRESHAREDKEY}}@$WG_DO_HOME_PRESHAREDKEY@" scripts/raw_ubuntu_userdata.sh
 
-          export CTX_DIGITALOCEAN_DROPLET_PROXY_TOKEN=$(echo ${{ secrets.ORG_DIGITALOCEAN_DROPLET_PROXY_TOKEN }} | base64 -d)
+          export CTX_DIGITALOCEAN_DROPLET_PROXY_TOKEN=$(echo ${{ secrets.ORG_DIGITALOCEAN_DNS_TOKEN }} | base64 -d)
           export CTX_DIGITALOCEAN_FIREWALL=$(echo ${{ secrets.ORG_DIGITALOCEAN_FIREWALL }} | base64 -d)
           export HETZNER_API_TOKEN=$(echo ${{ secrets.ORG_HETZNER_CLOUD_API_TOKEN }} | base64 -d)
           export HETZNER_VAULT_VOLUME_ID=$(echo ${{ secrets.ORG_HETZNER_VAULT_VOLUME_ID }} | base64 -d)
