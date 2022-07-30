@@ -138,11 +138,11 @@ func createServer(client *hcloud.Client, instanceTag string) {
 
 	// prepare new server
 	// myKey, _, _ := client.SSHKey.GetByName(ctx, "ackersond")
-	deploymentKey := createSSHKey(client, os.Getenv("GITHUB_RUN_ID"))
+	timestamp := strconv.FormatInt(time.Now().Unix(), 10)
+
+	deploymentKey := createSSHKey(client, "id"+os.Getenv("GITHUB_RUN_ID")+"_"+timestamp)
 
 	ubuntuUserData, _ := ioutil.ReadFile("ubuntu_userdata.sh")
-
-	timestamp := strconv.FormatInt(time.Now().Unix(), 10)
 
 	serverOpts := hcloud.ServerCreateOpts{
 		Name:       instanceTag + "-id" + os.Getenv("GITHUB_RUN_ID") + "-" + timestamp + ".ackerson.de",
