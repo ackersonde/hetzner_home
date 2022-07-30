@@ -45,7 +45,7 @@ EOF
 
 # prepare and start wireguard
 apt-get update
-apt-get -y install wireguard ca-certificates curl gnupg lsb-release iptables-persistent do-agent
+apt-get -y install wireguard ca-certificates curl gnupg lsb-release iptables-persistent
 
 cat > /etc/wireguard/wg.conf << EOF
 [Interface]
