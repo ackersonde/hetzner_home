@@ -36,3 +36,8 @@ http:
         stsPreload: true
         stsSeconds: 31536000
         customFrameOptionsValue: "SAMEORIGIN"
+    home-redirectregex:
+      redirectregex:
+        regex: "^https://www.ackerson.de/(.*)"
+        replacement: "https://ackerson.de/${1}"
+        permanent: true
