@@ -111,7 +111,6 @@ jobs:
             docker run -d --restart=always \
               -v /root/syncthing:/var/syncthing --hostname=$(echo ${{ secrets.ORG_CLOUD_SYNCTHING_HOSTNAME }} | base64 -d) \
               --label='traefik.enable=true' \
-              --label='traefik.http.routers.syncthing.tls.certResolver=letsencrypt' \
               --label='traefik.http.routers.syncthing.tls.domains=$(echo ${{ secrets.ORG_CLOUD_SYNCTHING_HOSTNAME }} | base64 -d)' \
               --label='traefik.http.routers.syncthing.rule=Host(\`$(echo ${{ secrets.ORG_CLOUD_SYNCTHING_HOSTNAME }} | base64 -d)\`)' \
               --label='traefik.http.routers.syncthing.middlewares=http-ratelimit@file,secHeaders@file,api_auth' \
