@@ -1,14 +1,17 @@
 package hetznercloud
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 
 	"github.com/hetznercloud/hcloud-go/hcloud"
 )
 
 var HETZNER_API_TOKEN = os.Getenv("HETZNER_API_TOKEN")
+var HETZNER_DNS_API_TOKEN = os.Getenv("HETZNER_DNS_API_TOKEN")
 var HETZNER_FIREWALL = os.Getenv("HETZNER_FIREWALL")
 var HETZNER_VAULT_VOLUME_ID = os.Getenv("HETZNER_VAULT_VOLUME_ID")
 
@@ -51,4 +54,34 @@ func DeleteServer(serverID int) string {
 	}
 
 	return result + server.Name
+}
+
+func UpdateDNSentry(ipAddr string, ttl string, recordType string,
+	name string, recordID string, zoneID string) string {
+	// https://dns.hetzner.com/api-docs/#operation/UpdateRecord
+
+	json := []byte(`{
+		"value": "` + ipAddr +
+		`","ttl": ` + ttl +
+		`,"type": "` + recordType +
+		`","name": "` + name +
+		`","zone_id": "` + zoneID + `"}`)
+	body := bytes.NewBuffer(json)
+
+	// Create client
+	client := &http.Client{}
+
+	// Create request
+	req, _ := http.NewRequest("PUT", "https://dns.hetzner.com/api/v1/records/"+recordID, body)
+
+	// Headers
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Auth-API-Token", HETZNER_DNS_API_TOKEN)
+
+	// Fetch Request
+	_, err := client.Do(req)
+	if err != nil {
+		return "Failure : " + err.Error()
+	}
+	return ""
 }

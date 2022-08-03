@@ -24,6 +24,8 @@ import (
 
 var sshPrivateKeyFilePath = "/home/runner/.ssh/id_rsa"
 var envFile = "/tmp/new_hetzner_server_params"
+var HETZNER_ACKERSONDE_ZONEID = os.Getenv("HETZNER_ACKERSONDE_ZONEID")
+var HETZNER_HAUSMEISTERDE_ZONEID = os.Getenv("HETZNER_HAUSMEISTERDE_ZONEID")
 
 func main() {
 	client := hcloud.NewClient(hcloud.WithToken(hetznercloud.HETZNER_API_TOKEN))
@@ -225,16 +227,30 @@ func cleanupDeploy(client *hcloud.Client, serverID int, instanceTag string) {
 	removeDeploymentFirewalls(client, ctx, instanceTag, "access=github")
 
 	server, _, _ := client.Server.GetByID(ctx, serverID)
-	// Update DNS entries @ DigitalOcean
+	// Update DNS entries
 	if server != nil {
 		if instanceTag == "homepage" {
-			common.UpdateDNSentry(server.PublicNet.IPv6.IP.String()+"1", "ackerson.de", 23738236)
-			common.UpdateDNSentry(server.PublicNet.IPv4.IP.String(), "ackerson.de", 23738257)
-			common.UpdateDNSentry(server.PublicNet.IPv6.IP.String()+"1", "hausmeisterservice-planb.de", 302721441)
-			common.UpdateDNSentry(server.PublicNet.IPv4.IP.String(), "hausmeisterservice-planb.de", 302721419)
+			common.UpdateDNSentry(server.PublicNet.IPv6.IP.String()+"1", "ackerson.de", 23738236) // hetzner recordID: db55783d0ab2e5e19506f9afd57199d8
+			common.UpdateDNSentry(server.PublicNet.IPv4.IP.String(), "ackerson.de", 23738257)     // hetzner recordID: 991390449734cc05de619cbb0ed1a1d0
+
+			// hausmeisterservice-planb.de
+			res := hetznercloud.UpdateDNSentry(
+				server.PublicNet.IPv6.IP.String()+"1", "60",
+				"AAAA", "@", "852f5fec44d24770c787cb8774002817",
+				HETZNER_HAUSMEISTERDE_ZONEID)
+			if res != "" {
+				log.Printf("updating AAAA record for hausmeister failed: %s", res)
+			}
+			res = hetznercloud.UpdateDNSentry(
+				server.PublicNet.IPv4.IP.String(), "60",
+				"A", "@", "bad33d83859e93d5ab7201a3643e9454",
+				HETZNER_HAUSMEISTERDE_ZONEID)
+			if res != "" {
+				log.Printf("updating A record for hausmeister failed: %s", res)
+			}
 		} else if instanceTag == "vault" {
-			common.UpdateDNSentry(server.PublicNet.IPv6.IP.String()+"1", "ackerson.de", 294257276)
-			common.UpdateDNSentry(server.PublicNet.IPv4.IP.String(), "ackerson.de", 294257241)
+			common.UpdateDNSentry(server.PublicNet.IPv6.IP.String()+"1", "ackerson.de", 294257276) // hetzner ID: baa95a1d099e3bad5acc1fc61bc5f2d3
+			common.UpdateDNSentry(server.PublicNet.IPv4.IP.String(), "ackerson.de", 294257241)     // hetzner ID: c738db6bd0b188eaee70dd6672d612b0
 		}
 	}
 }

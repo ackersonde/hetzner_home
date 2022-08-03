@@ -35,6 +35,10 @@ jobs:
           export HETZNER_API_TOKEN=$(echo ${{ secrets.ORG_HETZNER_CLOUD_API_TOKEN }} | base64 -d)
           export HETZNER_VAULT_VOLUME_ID=$(echo ${{ secrets.ORG_HETZNER_VAULT_VOLUME_ID }} | base64 -d)
           export HETZNER_FIREWALL=$(echo ${{ secrets.ORG_HETZNER_HOME_FIREWALL }} | base64 -d)
+          export HETZNER_DNS_API_TOKEN = =$(echo ${{ secrets.ORG_HETZNER_DNS_API_TOKEN }} | base64 -d)
+          export HETZNER_ACKERSONDE_ZONEID = =$(echo ${{ secrets.ORG_HETZNER_ACKERSONDE_ZONEID }} | base64 -d)
+          export HETZNER_HAUSMEISTERDE_ZONEID = =$(echo ${{ secrets.ORG_HETZNER_HAUSMEISTERDE_ZONEID }} | base64 -d)
+
           export SERVER_DEPLOY_CACERT_B64=${{ secrets.ORG_SERVER_DEPLOY_CACERT }}
           export SERVER_DEPLOY_SECRET_B64=${{ secrets.ORG_SERVER_DEPLOY_SECRET }}
           export SERVER_DEPLOY_PUBLIC_B64=${{ secrets.ORG_SERVER_DEPLOY_PUBLIC }}
