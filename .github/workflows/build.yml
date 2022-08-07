@@ -39,6 +39,7 @@ jobs:
           export HETZNER_ACKERSONDE_ZONEID=$(echo ${{ secrets.ORG_HETZNER_ACKERSONDE_ZONEID }} | base64 -d)
           export HETZNER_HAUSMEISTERDE_ZONEID=$(echo ${{ secrets.ORG_HETZNER_HAUSMEISTERDE_ZONEID }} | base64 -d)
 
+          export HTTP_AUTH_USERSFILE_B64=${{ secrets.ORG_CLOUD_SYNCTHING_BASIC_AUTH_USERSFILE }}
           export SERVER_DEPLOY_CACERT_B64=${{ secrets.ORG_SERVER_DEPLOY_CACERT }}
           export SERVER_DEPLOY_SECRET_B64=${{ secrets.ORG_SERVER_DEPLOY_SECRET }}
           export SERVER_DEPLOY_PUBLIC_B64=${{ secrets.ORG_SERVER_DEPLOY_PUBLIC }}
@@ -47,7 +48,7 @@ jobs:
           export SYNCTHING_CERT=$(echo ${{ secrets.ORG_CLOUD_SYNCTHING_CERT }} | base64 -d)
           export TITAN_PUBLIC_KEY=$(echo ${{ secrets.ORG_TITAN_PUBLIC_KEY }} | base64 -d)
 
-          envsubst '$SERVER_DEPLOY_CACERT_B64, $SERVER_DEPLOY_SECRET_B64, $SERVER_DEPLOY_PUBLIC_B64, $TITAN_PUBLIC_KEY, $SYNCTHING_CONFIG_B64, $SYNCTHING_KEY, $SYNCTHING_CERT' < scripts/raw_ubuntu_userdata.sh >ubuntu_userdata.sh
+          envsubst '$HTTP_AUTH_USERSFILE_B64 $SERVER_DEPLOY_CACERT_B64, $SERVER_DEPLOY_SECRET_B64, $SERVER_DEPLOY_PUBLIC_B64, $TITAN_PUBLIC_KEY, $SYNCTHING_CONFIG_B64, $SYNCTHING_KEY, $SYNCTHING_CERT' < scripts/raw_ubuntu_userdata.sh >ubuntu_userdata.sh
 
           export BUILD_HOST=$(echo ${{ secrets.ORG_BUILD_HOST }} | base64 -d)
           export MASTER_HOST=$(echo ${{ secrets.ORG_MASTER_HOST }} | base64 -d)
@@ -93,8 +94,9 @@ jobs:
               -v /root/traefik/certs:/certs/ \
               -v /root/traefik/keys:/keys/ \
               -v /root/traefik/dynamic_conf.yml:/dynamic_conf.yml \
+              -v /root/traefik/usersFile:/usersFile \
               --label='traefik.enable=true' \
-              --label='traefik.http.middlewares.api_auth.basicauth.users=$(echo ${{ secrets.ORG_CLOUD_SYNCTHING_BASIC_AUTH_USER }} | base64 -d):$(echo ${{ secrets.ORG_CLOUD_SYNCTHING_BASIC_AUTH_PASS }} | base64 -d)' \
+              --label='traefik.http.middlewares.api_auth.basicauth.usersfile=/usersFile' \
               --label='traefik.http.routers.api.entrypoints=web,secure' \
               --label='traefik.http.routers.api.middlewares=http-ratelimit@file,secHeaders@file,api_auth' \
               --label='traefik.http.routers.api.rule=Host(\`monitor.ackerson.de\`)' \
@@ -111,7 +113,7 @@ jobs:
               --api.dashboard=false --providers.docker.exposedByDefault=false --providers.file.filename=/dynamic_conf.yml \
               --entrypoints.web.address=:80 --entrypoints.secure.address=:443 \
               --entryPoints.web.forwardedHeaders.trustedIPs=172.17.0.1/24,fd00::/80 \
-              --entryPoints.secure.forwardedHeaders.trustedIPs=172.17.0.1/24,fd00::/80 \
+              --entryPoints.secure.forwardedHeaders.trustedIPs=172.17.0.1/24,fd00::/80 && \
             docker run -d --restart=always \
               -v /root/syncthing:/var/syncthing --hostname=$(echo ${{ secrets.ORG_CLOUD_SYNCTHING_HOSTNAME }} | base64 -d) \
               --label='traefik.enable=true' \
@@ -124,7 +126,7 @@ jobs:
 
           # New server is up and running - prepare the old one for death
           # retrieve current deployment priv key
-          echo "${{ secrets.HETZNER_SSH_PRIVKEY }}" | base64 -d | tee ~/.ssh/id_rsa_old
+          echo "${{ secrets.HETZNER_SSH_PRIVKEY }}" | base64 -d | tee ~/.ssh/id_rsa_old >/dev/null
           chmod 400 ~/.ssh/id_rsa_old
 
           export SLACK_NOTIFY_TOKEN=$(echo ${{ secrets.ORG_SLACK_NOTIFICATIONS_TOKEN }} | base64 -d)
@@ -165,20 +167,21 @@ jobs:
           # Redeploy homepage, bender, telegram-bot to new server
           curl -Ss -X POST -u "$GITHUB_USERNAME:$GITHUB_TOKEN" \
             -H "Accept: application/vnd.github.v3+json" \
-            https://api.github.com/repos/ackersonde/ackerson.de-go/actions/workflows/build.yml/dispatches \
-            -d '{"ref":"hetzner","inputs":{"ca_pub_fingerprint":"$NEW_SERVER_ID"}}'
+            https://api.github.com/repos/ackersonde/hsm-planb.de/actions/workflows/build.yml/dispatches \
+            -d '{"ref":"hetzner"}'
           curl -Ss -X POST -u "$GITHUB_USERNAME:$GITHUB_TOKEN" \
             -H "Accept: application/vnd.github.v3+json" \
-            https://api.github.com/repos/ackersonde/bender-slackbot/actions/workflows/build.yml/dispatches \
-            -d '{"ref":"hetzner"}'
+            https://api.github.com/repos/ackersonde/ackerson.de-go/actions/workflows/build.yml/dispatches \
+            -d '{"ref":"hetzner","inputs":{"ca_pub_fingerprint":"$NEW_SERVER_ID"}}'
           curl -Ss -X POST -u "$GITHUB_USERNAME:$GITHUB_TOKEN" \
             -H "Accept: application/vnd.github.v3+json" \
             https://api.github.com/repos/ackersonde/telegram-bot/actions/workflows/build.yml/dispatches \
             -d '{"ref":"hetzner"}'
           curl -Ss -X POST -u "$GITHUB_USERNAME:$GITHUB_TOKEN" \
             -H "Accept: application/vnd.github.v3+json" \
-            https://api.github.com/repos/ackersonde/hsm-planb.de/actions/workflows/build.yml/dispatches \
+            https://api.github.com/repos/ackersonde/bender-slackbot/actions/workflows/build.yml/dispatches \
             -d '{"ref":"hetzner"}'
+
           # WARNING: Hetzner only allows max *5* firewalls per server! With the default + the 4 deployment FWs above == 5
           # so you can't autodeploy addtl, new repos w/o refactoring the whole shebang
           # (e.g. only have one github-deploy FW which gets deleted after it's >10mins old?): end WARNING

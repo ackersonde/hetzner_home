@@ -1,5 +1,8 @@
 #!/bin/bash
 mkdir -p /root/traefik/logs /root/traefik/certs /root/traefik/keys
+cat <<EOF > /root/traefik/usersFile
+$(echo $HTTP_AUTH_USERSFILE_B64 | base64 -d)
+EOF
 
 echo -n "$SERVER_DEPLOY_CACERT_B64" | base64 -d | tee /root/.ssh/id_ed25519-cert.pub >/dev/null
 chmod 400 /root/.ssh/id_ed25519-cert.pub
