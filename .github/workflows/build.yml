@@ -50,10 +50,9 @@ jobs:
 
           envsubst '$HTTP_AUTH_USERSFILE_B64 $SERVER_DEPLOY_CACERT_B64, $SERVER_DEPLOY_SECRET_B64, $SERVER_DEPLOY_PUBLIC_B64, $TITAN_PUBLIC_KEY, $SYNCTHING_CONFIG_B64, $SYNCTHING_KEY, $SYNCTHING_CERT' < scripts/raw_ubuntu_userdata.sh >ubuntu_userdata.sh
 
-          export BUILD_HOST=$(echo ${{ secrets.ORG_BUILD_HOST }} | base64 -d)
           export MASTER_HOST=$(echo ${{ secrets.ORG_MASTER_HOST }} | base64 -d)
           export SLAVE_HOST=$(echo ${{ secrets.ORG_SLAVE_HOST }} | base64 -d)
-          export SERVERS="ubuntu@$MASTER_HOST ubuntu@$SLAVE_HOST ackersond@$BUILD_HOST"
+          export SERVERS="ubuntu@$MASTER_HOST ubuntu@$SLAVE_HOST"
 
           mkdir ~/.ssh # for new RSA key created in next step
           ./hetzner -fn=createServer -tag=homepage
@@ -135,7 +134,7 @@ jobs:
             -d text="vfa update $NEW_SERVER_IPV6,$NEW_SERVER_IPV4" https://slack.com/api/chat.postMessage
 
           # Use existing server to update new firewall rules for home network & vault instance
-          envsubst '${MASTER_HOST} ${SLAVE_HOST} ${BUILD_HOST} ${NEW_SERVER_IPV6} ${OLD_SERVER_IPV6}' < scripts/firewall_rules.sh > fw_rules.sh
+          envsubst '${MASTER_HOST} ${SLAVE_HOST} ${NEW_SERVER_IPV6} ${OLD_SERVER_IPV6}' < scripts/firewall_rules.sh > fw_rules.sh
           if scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_old fw_rules.sh root@ackerson.de:/root/ ; then
             if ! ssh -i ~/.ssh/id_rsa_old root@ackerson.de /bin/bash /root/fw_rules.sh ; then
               curl -s -o /dev/null -X POST -d token=$SLACK_NOTIFY_TOKEN -d channel=C092UE0H4 \
