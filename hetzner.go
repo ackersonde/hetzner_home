@@ -249,7 +249,7 @@ func cleanupDeploy(client *hcloud.Client, serverID int, instanceTag string) {
 			// ipv4.ackerson.de
 			res = hetznercloud.UpdateDNSentry(
 				server.PublicNet.IPv4.IP.String(), "60",
-				"A", "@", "0cdef5068d792c4f032da705707f7842",
+				"A", "ipv4", "0cdef5068d792c4f032da705707f7842",
 				HETZNER_ACKERSONDE_ZONEID)
 			if res != "" {
 				log.Printf("updating A record for ipv4.ackerson.de failed: %s", res)
@@ -257,7 +257,7 @@ func cleanupDeploy(client *hcloud.Client, serverID int, instanceTag string) {
 			// ipv6.ackerson.de
 			res = hetznercloud.UpdateDNSentry(
 				server.PublicNet.IPv6.IP.String()+"1", "60",
-				"AAAA", "@", "4e840f1bbe1e1d3745b95fb7cf19f709",
+				"AAAA", "ipv6", "4e840f1bbe1e1d3745b95fb7cf19f709",
 				HETZNER_ACKERSONDE_ZONEID)
 			if res != "" {
 				log.Printf("updating AAAA record for ipv6.ackerson.de failed: %s", res)
