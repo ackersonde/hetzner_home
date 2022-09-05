@@ -161,6 +161,10 @@ jobs:
           # perform final cleanup
           ./hetzner -fn=cleanupDeploy -serverID=$NEW_SERVER_ID -tag=homepage # if serverID provided, DNS is UPDATED!
 
+          export IPV6_MASTER_HOME=$(echo ${{ secrets.ORG_IPV6_MASTER_HOME }} | base64 -d)
+          ssh root@$NEW_SERVER_IPV4 "ssh-keyscan -t ed25519 $NEW_SERVER_IPV4" | awk '{print $3}' > ./homepage_host_key
+          scp ./homepage_host_key ubuntu@[$IPV6_MASTER_HOME]:~/my-ca/
+
           export GITHUB_USERNAME=$(echo ${{ secrets.ORG_GITHUB_PERSONAL_ACCESS_USERNAME }} | base64 -d)
           export GITHUB_TOKEN=$(echo ${{ secrets.ORG_GITHUB_PERSONAL_ACCESS_TOKEN }} | base64 -d)
           # Redeploy homepage, bender, telegram-bot to new server
