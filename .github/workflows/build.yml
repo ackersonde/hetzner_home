@@ -167,19 +167,19 @@ jobs:
           curl -Ss -X POST -u "$GITHUB_USERNAME:$GITHUB_TOKEN" \
             -H "Accept: application/vnd.github.v3+json" \
             https://api.github.com/repos/ackersonde/hsm-planb.de/actions/workflows/build.yml/dispatches \
-            -d '{"ref":"hetzner"}'
+            -d '{"ref":"master"}'
           curl -Ss -X POST -u "$GITHUB_USERNAME:$GITHUB_TOKEN" \
             -H "Accept: application/vnd.github.v3+json" \
             https://api.github.com/repos/ackersonde/ackerson.de-go/actions/workflows/build.yml/dispatches \
-            -d '{"ref":"hetzner","inputs":{"ca_pub_fingerprint":"$NEW_SERVER_ID"}}'
+            -d '{"ref":"master","inputs":{"ca_pub_fingerprint":"$NEW_SERVER_ID"}}'
           curl -Ss -X POST -u "$GITHUB_USERNAME:$GITHUB_TOKEN" \
             -H "Accept: application/vnd.github.v3+json" \
             https://api.github.com/repos/ackersonde/telegram-bot/actions/workflows/build.yml/dispatches \
-            -d '{"ref":"hetzner"}'
+            -d '{"ref":"main"}'
           curl -Ss -X POST -u "$GITHUB_USERNAME:$GITHUB_TOKEN" \
             -H "Accept: application/vnd.github.v3+json" \
             https://api.github.com/repos/ackersonde/bender-slackbot/actions/workflows/build.yml/dispatches \
-            -d '{"ref":"hetzner"}'
+            -d '{"ref":"master"}'
 
           # WARNING: Hetzner only allows max *5* firewalls per server! With the default + the 4 deployment FWs above == 5
           # so you can't autodeploy addtl, new repos w/o refactoring the whole shebang
