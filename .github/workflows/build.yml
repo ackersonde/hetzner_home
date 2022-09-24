@@ -133,11 +133,6 @@ jobs:
           curl -s -X POST -d token=$SLACK_NOTIFY_TOKEN -d channel=C33QYV3PW \
             -d text="vfa update $NEW_SERVER_IPV6,$NEW_SERVER_IPV4" https://slack.com/api/chat.postMessage
 
-          # update host_key in home network
-          ssh root@$NEW_SERVER_IPV4 "\
-            ssh-keyscan -t ed25519 ${NEW_SERVER_IPV6} | awk '{print $3}' > homepage_host_key && \
-            scp -o StrictHostKeyChecking=no homepage_host_key ubuntu@${MASTER_HOST}:~/my-ca/"
-
           # Use existing server to update new firewall rules for home network & vault instance
           envsubst '${MASTER_HOST} ${SLAVE_HOST} ${NEW_SERVER_IPV6} ${OLD_SERVER_IPV6}' < scripts/firewall_rules.sh > fw_rules.sh
           if scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_old fw_rules.sh root@ackerson.de:/root/ ; then
