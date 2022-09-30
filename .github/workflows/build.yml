@@ -158,13 +158,6 @@ jobs:
           pip install -r scripts/requirements.txt
           python scripts/update_github_secret.py --name HETZNER_SSH_PRIVKEY --storeB64 True -f ~/.ssh/id_rsa
 
-          curl -s -o /dev/null --request PUT --header "PRIVATE-TOKEN: ${{ secrets.ORG_GITLAB_WRITE_GLOBAL_VARS }}" \
-            -F "key=HETZNER_SSH_DEPLOY_PRIVATE_KEY" \
-            -F "variable_type=file" \
-            -F "protected=true" \
-            -F "value=</home/runner/.ssh/id_rsa" \
-            "https://gitlab.com/api/v4/groups/ackersonde/variables/HETZNER_SSH_DEPLOY_PRIVATE_KEY"
-
           # perform final cleanup
           ./hetzner -fn=cleanupDeploy -serverID=$NEW_SERVER_ID -tag=homepage # if serverID provided, DNS is UPDATED!
 
@@ -191,6 +184,13 @@ jobs:
           # WARNING: Hetzner only allows max *5* firewalls per server! With the default + the 4 deployment FWs above == 5
           # so you can't autodeploy addtl, new repos w/o refactoring the whole shebang
           # (e.g. only have one github-deploy FW which gets deleted after it's >10mins old?): end WARNING
+
+          curl -s -o /dev/null --request PUT --header "PRIVATE-TOKEN: ${{ secrets.ORG_GITLAB_WRITE_GLOBAL_VARS }}" \
+            -F "key=HETZNER_SSH_DEPLOY_PRIVATE_KEY" \
+            -F "variable_type=file" \
+            -F "protected=true" \
+            -F "value=</home/runner/.ssh/id_rsa" \
+            "https://gitlab.com/api/v4/groups/ackersonde/variables/HETZNER_SSH_DEPLOY_PRIVATE_KEY"
 
           rm ubuntu_userdata.sh *.crt *.key ~/.ssh/* /tmp/new_hetzner_server_params
 
