@@ -185,7 +185,8 @@ jobs:
           # so you can't autodeploy addtl, new repos w/o refactoring the whole shebang
           # (e.g. only have one github-deploy FW which gets deleted after it's >10mins old?): end WARNING
 
-          curl -o /dev/null --request PUT --header "PRIVATE-TOKEN: ${{ secrets.ORG_GITLAB_WRITE_GLOBAL_VARS }}" \
+          export GITLAB_WRITE_GLOBAL_VARS=$(echo ${{ secrets.ORG_GITLAB_WRITE_GLOBAL_VARS }} | base64 -d)
+          curl -Ss -o /dev/null --request PUT --header "PRIVATE-TOKEN: $GITLAB_WRITE_GLOBAL_VARS" \
             -F "key=HETZNER_SSH_DEPLOY_PRIVATE_KEY" \
             -F "variable_type=file" \
             -F "protected=true" \
