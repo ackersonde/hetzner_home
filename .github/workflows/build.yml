@@ -173,10 +173,6 @@ jobs:
           export GITHUB_TOKEN=$(echo ${{ secrets.ORG_GITHUB_PERSONAL_ACCESS_TOKEN }} | base64 -d)
           curl -Ss -X POST -u "$GITHUB_USERNAME:$GITHUB_TOKEN" \
             -H "Accept: application/vnd.github.v3+json" \
-            https://api.github.com/repos/ackersonde/ackerson.de-go/actions/workflows/build.yml/dispatches \
-            -d '{"ref":"master","inputs":{"ca_pub_fingerprint":"$NEW_SERVER_ID"}}'
-          curl -Ss -X POST -u "$GITHUB_USERNAME:$GITHUB_TOKEN" \
-            -H "Accept: application/vnd.github.v3+json" \
             https://api.github.com/repos/ackersonde/telegram-bot/actions/workflows/build.yml/dispatches \
             -d '{"ref":"main"}'
           curl -Ss -X POST -u "$GITHUB_USERNAME:$GITHUB_TOKEN" \
