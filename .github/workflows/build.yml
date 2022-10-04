@@ -163,8 +163,11 @@ jobs:
 
           # Redeploy homepage, bender, telegram-bot to new server
           export HSMPLANB_PIPELINE_TRIGGER_DEPLOY=$(echo ${{ secrets.ORG_GITLAB_DEPLOY_HSMPLANB }} | base64 -d)
+          export HOMEPAGE_PIPELINE_TRIGGER_DEPLOY=$(echo ${{ secrets.ORG_GITLAB_DEPLOY_HOMEPAGE }} | base64 -d)
           curl -Ss -X POST --fail -F token=$HSMPLANB_PIPELINE_TRIGGER_DEPLOY -F "ref=main" -F "variables[RUN_NIGHTLY_BUILD]=true" \
             https://gitlab.com/api/v4/projects/39645086/trigger/pipeline
+          curl -Ss -X POST --fail -F token=$HOMEPAGE_PIPELINE_TRIGGER_DEPLOY -F "ref=master" -F "variables[RUN_NIGHTLY_BUILD]=true" \
+            https://gitlab.com/api/v4/projects/38231324/trigger/pipeline
 
           export GITHUB_USERNAME=$(echo ${{ secrets.ORG_GITHUB_PERSONAL_ACCESS_USERNAME }} | base64 -d)
           export GITHUB_TOKEN=$(echo ${{ secrets.ORG_GITHUB_PERSONAL_ACCESS_TOKEN }} | base64 -d)
